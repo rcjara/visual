@@ -5,9 +5,10 @@ class Line
   CHR_HEIGHT = 5.0
 
   include Background
-  attr_reader :x, :y, :width, :height
+  attr_reader :style
 
   def initialize(x1, y1, x2, y2, args={})
+    style = {}
     ends_mark  = args.fetch(:ends_mark, nil)
 
     @start_mark = @end_mark = ends_mark

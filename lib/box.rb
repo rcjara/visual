@@ -3,34 +3,61 @@ require_relative 'line'
 
 class Box
   include Background
-
   DEFAULT_CORNERS = {
     standard: '+'
   }
 
-  attr_accessor :width, :height, :x, :y, :border_style
+  DEFAULT_STYLING = {
+    #position
+    x: 0,
+    y: 0,
+    #size
+    width:  0,
+    height: 0,
+    #background
+    background: ' ',
+    #springingness
+    spring_x: false,
+    spring_y: false,
+    #border
+    border_style: nil,
+    #corners
+    top_left_corner:     nil,
+    top_right_corner:    nil,
+    bottom_left_corner:  nil,
+    bottom_right_corner: nil,
 
-  def initialize(width, height, opts = {})
-    @x = opts.fetch(:x, 0)
-    @y = opts.fetch(:y, 0)
+  }
+
+  DEPENDENT_DEFAULTS = {
+    springy: {
+      type: :direct,
+      dependents: [:spring_x, :spring_y] 
+    },
+    border_style: {
+      type: :additional,
+      dependents: [:border_style],
+      also: [:corners]
+    }
+    corners: {
+      type: :hash,
+      hash: DEFAULT_CORNERS,
+      dependents: [:top_left_corner, :top_right_corner, 
+        :bottom_left_corner, :bottom_right_corner]
+    },
+    size: {
+      type: :direct,
+      dependents: [:width, :height]
+    }
+  }
 
 
-    @width = width
-    @height = height
-    @background = opts.fetch(:background, ' ')
-    @objects = []
+  attr_accessor :style
 
-    if opts[:springy]
-      @spring_x = true
-      @spring_y = true
-    end
-
-    @spring_x ||= opts.fetch(:spring_x, false)
-    @spring_y ||= opts.fetch(:spring_y, false)
-
-    set_border_options!(opts)
-
+  def initialize(opts = {})
+    @style = self.class.process_styles(opts)
     @text = process_text(opts.fetch(:text, nil))
+    @objects = []
   end
 
   def construct_display_array
@@ -53,43 +80,65 @@ class Box
 
   def << (object)
     @objects << object
-    readjust_size
+    readjust_size!
     self
   end
 
   def in_bounds?(x = 0, y = 0)
-    (x >= 0) && (y >= 0) && (x < @width) && (y < @height)
+    (x >= 0) && (y >= 0) && (x < @style[:width]) && (y < @style[:height])
+  end
+
+  def self.process_styles(styling)
+    style_hash = process_dependent_defaults(styling)
+    
+    DEFAULT_STYLING.each_pair do |key, default_value|
+      style_hash[key] = styling[key] || style_hash[key] || default_value
+    end
+
+    style_hash
+  end
+
+  def self.process_dependent_defaults(styling)
+    style_hash = {}
+    DEPENDENT_DEFAULTS.each_pair do |key, opts_hash|
+      if styling[key]
+        case opts_hash[:type]
+        when :direct
+          opts_hash[:dependents].each do |dependent|
+            style_hash[dependent] = styling[key]
+          end
+        else
+          opts_hash[:dependents].each do |dependent|
+            type = opts_hash[:type]
+            style_hash[dependent] = opts_hash[type][ styling[key] ]
+          end
+        end
+      end
+    end
+
+    style_hash
   end
 
   private
 
-  def set_border_options!(opts)
-    @border_style = opts.fetch(:border, nil)
-    corners = opts.fetch(:corners, DEFAULT_CORNERS[@border_style])
-    @top_left_corner     = opts[:top_left_corner] || corners
-    @top_right_corner    = opts[:top_right_corner] || corners
-    @bottom_left_corner  = opts[:bottom_left_corner] || corners
-    @bottom_right_corner = opts[:bottom_right_corner] || corners
-  end
-
   def draw_border!
-    return unless @border_style
-    case @border_style
+    return unless @style[:border_style]
+    case @style[:border_style]
     when :standard
       draw_standard_border!
     end
   end
 
   def draw_corners!
-    @display_array[ 0][ 0] = @top_left_corner
-    @display_array[ 0][-1] = @top_right_corner
-    @display_array[-1][ 0] = @bottom_left_corner
-    @display_array[-1][-1] = @bottom_right_corner
+    @display_array[ 0][ 0] = @style[:top_left_corner]
+    @display_array[ 0][-1] = @style[:top_right_corner]
+    @display_array[-1][ 0] = @style[:bottom_left_corner]
+    @display_array[-1][-1] = @style[:bottom_right_corner]
   end
 
   def draw_standard_border!
-    @display_array[ 0] = '-' * @width
-    @display_array[-1] = '-' * @width
+    @display_array[ 0] = '-' * @style[:width]
+    @display_array[-1] = '-' * @style[:width]
     @display_array[1...-1].each do |line|
       line[0]  = '|'
       line[-1] = '|'
@@ -101,25 +150,24 @@ class Box
     return nil unless text
   end
 
-  def readjust_size
-    readjust_width  if @spring_x
-    readjust_height if @spring_y
+  def readjust_size!
+    readjust(:width)  if @style[:spring_x]
+    readjust(:height) if @style[:spring_y]
   end
 
-  def readjust_width
-    max_x = @objects.inject(0) do |max, obj|
-      [max, obj.x + obj.width].max
+  #only ever used for width/height
+  def readjust(property)
+    position = case property
+      when :width
+        :x
+      when :height
+        :y
+      end
+    max = @objects.inject(0) do |m, obj|
+      [m, obj.style[position] + obj.style[property] ].max
     end
 
-    @width = max_x if max_x > @width
-  end
-
-  def readjust_height
-    max_y = @objects.inject(0) do |max, obj|
-      [max, obj.y + obj.height].max
-    end
-
-    @height = max_y if max_y > @height
+    @style[property] = max if max > @style[property]
   end
 
 end

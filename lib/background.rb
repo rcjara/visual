@@ -4,11 +4,11 @@ module Background
   end
 
   def construct_background_array
-    (0...@height).collect { @background * @width }
+    (0...style[:height]).collect { style[:background] * style[:width] }
   end
 
   def draw_to(other)
-    other.mark(@x, @y, display_array, @background)
+    other.mark(style[:x], style[:y], display_array, style[:background])
   end
 
   def display
