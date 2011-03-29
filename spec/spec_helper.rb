@@ -23,4 +23,6 @@ EOS
 +--------+
 EOS
 
+  CORNERS = [:top_left_corner, :top_right_corner, 
+        :bottom_left_corner, :bottom_right_corner]
 end

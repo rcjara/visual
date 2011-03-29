@@ -38,7 +38,7 @@ class Box
       type: :additional,
       dependents: [:border_style],
       also: [:corners]
-    }
+    },
     corners: {
       type: :hash,
       hash: DEFAULT_CORNERS,
@@ -102,21 +102,34 @@ class Box
     style_hash = {}
     DEPENDENT_DEFAULTS.each_pair do |key, opts_hash|
       if styling[key]
-        case opts_hash[:type]
-        when :direct
-          opts_hash[:dependents].each do |dependent|
-            style_hash[dependent] = styling[key]
-          end
-        else
-          opts_hash[:dependents].each do |dependent|
-            type = opts_hash[:type]
-            style_hash[dependent] = opts_hash[type][ styling[key] ]
-          end
-        end
+        process_dependent_default(styling, style_hash, key, opts_hash)
       end
     end
 
     style_hash
+  end
+
+  def self.process_dependent_default(styling, style_hash, key, opts_hash)
+    case opts_hash[:type]
+    when :direct
+      opts_hash[:dependents].each do |dependent|
+        style_hash[dependent] = styling[key]
+      end
+    when :additional
+      opts_hash[:dependents].each do |dependent|
+        style_hash[dependent] = styling[key]
+      end
+      opts_hash[:also].each do |also_key|
+        also_value = DEPENDENT_DEFAULTS[also_key]
+        styling[also_key] ||= styling[key]
+        process_dependent_default(styling, style_hash, also_key, also_value)
+      end
+    else
+      opts_hash[:dependents].each do |dependent|
+        type = opts_hash[:type]
+        style_hash[dependent] = opts_hash[type][ styling[key] ]
+      end
+    end
   end
 
   private

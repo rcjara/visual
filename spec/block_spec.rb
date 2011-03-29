@@ -5,12 +5,24 @@ include BoxSpecHelper
 
 describe Box do
   describe "process_dependent_defaults" do
-    it "should mark all the dependent styles" do
+    it "should register all the dependent styles" do
       h = Box.process_dependent_defaults(:size => 5)
       h[:height].should == 5
       h[:width].should == 5
     end
 
+    it "should handle :hash type defaults" do
+      h = Box.process_dependent_defaults(corners: :standard)
+      CORNERS.each{|c| h[c].should == '+' }
+    end
+
+    it "should handle :additional type defaults" do
+      h = Box.process_dependent_defaults(border_style: :standard)
+      h[:border_style].should == :standard
+      CORNERS.each{|c| h[c].should == '+' }
+    end
+    
+    
     it "should return an empty hash in response to nonsense" do
       h = Box.process_dependent_defaults(:blize => 5)
       h.should be_empty
@@ -189,6 +201,14 @@ EOS
     it "should have a border_style" do
       @b.style[:border_style].should == :standard
     end
+
+    it "should have corners" do
+      @b.style[:top_left_corner    ].should == '+'
+      @b.style[:top_right_corner   ].should == '+'
+      @b.style[:bottom_left_corner ].should == '+'
+      @b.style[:bottom_right_corner].should == '+'
+    end
+    
     
     
     it "should display properly" do
