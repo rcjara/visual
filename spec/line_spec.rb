@@ -4,7 +4,7 @@ require_relative 'spec_helper'
 
 describe Line do
   before(:each) do
-    @b = Box.new(20, 12, background: '.')
+    @b = Box.new(width: 20, height: 12, background: '.')
   end
 
   describe "horizontal line" do

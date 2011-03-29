@@ -3,6 +3,7 @@ require_relative 'line'
 
 class Box
   include Background
+
   DEFAULT_CORNERS = {
     standard: '+'
   }

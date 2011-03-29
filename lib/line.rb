@@ -8,7 +8,6 @@ class Line
   attr_reader :style
 
   def initialize(x1, y1, x2, y2, args={})
-    style = {}
     ends_mark  = args.fetch(:ends_mark, nil)
 
     @start_mark = @end_mark = ends_mark
@@ -17,12 +16,14 @@ class Line
     @end_mark   ||= args[:end_mark]
 
     @mark       = args.fetch(:mark, :standard)
-    @background = args.fetch(:ignore, '.')
 
-    @height = [y1, y2].max + 32
-    @width  = [x1, x2].max + 32
+    @style = {}
+    @style[:background] = args.fetch(:ignore, '.')
+    @style[:height] = [y1, y2].max + 1
+    @style[:width ] = [x1, x2].max + 1
+    @style[:x     ] = 0
+    @style[:y     ] = 0
 
-    @x, @y = 0, 0
 
     @x1, @x2, @y1, @y2 = x1, x2, y1, y2
 
