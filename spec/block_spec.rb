@@ -45,10 +45,15 @@ describe Box do
 .....
 EOS
     end
-    
+
     it "should have the right height/width set in style" do
       @b.style[:width].should == 5
       @b.style[:height].should == 5
+    end
+    
+    it "should have the proper clearances" do
+      @b.right_clearance.should == 5
+      @b.bottom_clearance.should == 5
     end
     
   end
@@ -188,6 +193,40 @@ EOS
 ....................
 EOS
         end
+
+        describe "on adding a third object by <<" do
+          before(:each) do
+            @b << Box.new(width: 10, height: 6, border_style: :standard)
+          end
+          
+          it "should display appropriately" do
+            @b.display.should == <<EOS
++--------+..........
+|........|..........
+|........|..........
+|........|..........
+|........|..........
++--------+..........
+....................
+....................
+....................
+....................
+....................
+....................
+....................
+....................
+....................
+....................
+....................
+....................
+....................
+....................
+EOS
+          
+          end
+          
+        end
+
       end
       
     end
@@ -216,6 +255,83 @@ EOS
     end
     
   end
+
+  describe "adding to a box" do
+    before(:each) do
+      @b = Box.new(springy: true)
+    end
+
+    it "should be springy in both x and y" do
+      @b.style[:spring_x].should be_true
+      @b.style[:spring_y].should be_true
+    end
+    
+
+    describe "to the right" do
+      before(:each) do
+        @b.add_right( Box.new(width: 10, height: 6, border_style: :standard) )
+      end
+      
+      it "should display properly" do
+        @b.display.should == BORDER_10_6
+      end
+
+      it "should have the correct width/height" do
+        @b.style[:width].should == 10
+        @b.style[:height].should == 6
+      end
+      
+      
+      describe "twice" do
+        before(:each) do
+          @b.add_right( Box.new(width: 10, height: 6, border_style: :standard) )
+        end
+        
+        it "should display properly" do
+          @b.display.should == <<EOS
++--------++--------+
+|        ||        |
+|        ||        |
+|        ||        |
+|        ||        |
++--------++--------+
+EOS
+        end
+
+        describe "and then add to the bottom" do
+          before(:each) do
+            @b.add_bottom(Box.new(width: 8, height: 4, border_style: :standard) )
+          end
+
+          it "should have a height of 10" do
+            @b.style[:height].should == 10
+          end
+          
+          
+          it "should display properly" do
+            @b.display.should == <<EOS
++--------++--------+
+|        ||        |
+|        ||        |
+|        ||        |
+|        ||        |
++--------++--------+
+          +------+  
+          |      |  
+          |      |  
+          +------+  
+EOS
+          end
+
+        end
+        
+      end
+      
+    end
+    
+    
+  end
+  
   
   
 end

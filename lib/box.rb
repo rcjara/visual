@@ -27,10 +27,20 @@ class Box
     top_right_corner:    nil,
     bottom_left_corner:  nil,
     bottom_right_corner: nil,
+    #margins
+    margin_top:    0,
+    margin_bottom: 0,
+    margin_left:   0,
+    margin_right:  0
 
   }
 
   DEPENDENT_DEFAULTS = {
+    margins: {
+      type: :direct,
+      dependents: [:margin_top, :margin_bottom, 
+        :margin_left, :margin_right]
+    },
     springy: {
       type: :direct,
       dependents: [:spring_x, :spring_y] 
@@ -81,6 +91,40 @@ class Box
 
   def << (object)
     @objects << object
+    readjust_size!
+    self
+  end
+
+  def right_clearance
+    style[:x] + style[:margin_right] + style[:width]
+  end
+
+  def bottom_clearance
+    style[:y] + style[:margin_bottom] + style[:height]
+  end
+
+  def add_right(object)
+    if @objects.empty?
+      self.<< object
+    else
+      object.style[:x] = @objects.last.right_clearance
+      object.style[:y] = @objects.last.style[:y]
+      @objects << object
+    end
+
+    readjust_size!
+    self
+  end
+
+  def add_bottom(object)
+    if @objects.empty?
+      self.<< object
+    else
+      object.style[:x] = @objects.last.style[:x]
+      object.style[:y] = @objects.last.bottom_clearance
+      @objects << object
+    end
+
     readjust_size!
     self
   end

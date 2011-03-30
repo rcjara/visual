@@ -1,0 +1,2 @@
+Strip out defaults functionality / make it into its own gem.
+  -set up line.rb with new defaults gem
