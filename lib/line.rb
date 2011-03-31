@@ -1,29 +1,37 @@
 require_relative 'background'
+require_relative 'shared_default_stylings'
 
 class Line
+  include Background
+  include DefaultsProcessor
+
   CHR_WIDTH  = 3.5
   CHR_HEIGHT = 5.0
 
-  include Background
+  LINE_DEFAULT_STYLING = {
+    mark:       :standard,
+    #start/end markings
+    start_mark: nil,
+    end_mark:   nil
+  }
+
+  LINE_DEPENDENT_DEFAULTS = {
+    ends_mark: {
+      type: :direct,
+      dependents: [:start_mark, :end_mark]
+    }
+  }
+
   attr_reader :style
+  attr_accessor :x1, :x2, :y1, :y2
 
   def initialize(x1, y1, x2, y2, args={})
     ends_mark  = args.fetch(:ends_mark, nil)
 
-    @start_mark = @end_mark = ends_mark
+    @style = process_defaults(args)
 
-    @start_mark ||= args[:start_mark]
-    @end_mark   ||= args[:end_mark]
-
-    @mark       = args.fetch(:mark, :standard)
-
-    @style = {}
-    @style[:background] = args.fetch(:ignore, '.')
     @style[:height] = [y1, y2].max + 1
     @style[:width ] = [x1, x2].max + 1
-    @style[:x     ] = 0
-    @style[:y     ] = 0
-
 
     @x1, @x2, @y1, @y2 = x1, x2, y1, y2
 
@@ -69,19 +77,29 @@ class Line
   end
 
   def line_marking(difx, dify)
-    case @mark
+    case style[:mark]
     when :standard
       difx.abs > dify.abs ? '-' : '|'
     else
-      @mark
+      style[:mark]
     end
   end
 
   private
 
+  def default_values
+    @@default_values ||= 
+      SharedDefaultStylings::DEFAULT_STYLING.merge(LINE_DEFAULT_STYLING)
+  end
+
+  def dependent_defaults
+    @@default_dependents ||=
+      SharedDefaultStylings::DEPENDENT_DEFAULTS.merge(LINE_DEPENDENT_DEFAULTS)
+  end
+
   def mark_ends!
-    @display_array[@y1][@x1] = @start_mark if @start_mark
-    @display_array[@y2][@x2] = @end_mark   if @end_mark
+    @display_array[@y1][@x1] = style[:start_mark] if style[:start_mark]
+    @display_array[@y2][@x2] = style[:end_mark]   if style[:end_mark]
   end
 
 end

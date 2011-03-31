@@ -8,7 +8,8 @@ module Background
   end
 
   def draw_to(other)
-    other.mark(style[:x], style[:y], display_array, style[:background])
+    ignore_chr = style[:transparent] ? style[:background] : nil
+    other.mark(style[:x], style[:y], display_array, ignore_chr)
   end
 
   def display

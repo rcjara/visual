@@ -1,35 +1,47 @@
 require_relative 'spec_helper'
-require_relative '../lib/Box'
 
 include BoxSpecHelper
 
 describe Box do
-  describe "process_dependent_defaults" do
+  describe "process_defaults" do
     it "should register all the dependent styles" do
-      h = Box.process_dependent_defaults(:size => 5)
+      h = Box.new.process_defaults(:size => 5)
       h[:height].should == 5
       h[:width].should == 5
     end
 
     it "should handle :hash type defaults" do
-      h = Box.process_dependent_defaults(corners: :standard)
+      h = Box.new.process_defaults(corners: :standard)
       CORNERS.each{|c| h[c].should == '+' }
     end
 
     it "should handle :additional type defaults" do
-      h = Box.process_dependent_defaults(border_style: :standard)
+      h = Box.new.process_defaults(border_style: :standard)
       h[:border_style].should == :standard
       CORNERS.each{|c| h[c].should == '+' }
     end
     
     
     it "should return an empty hash in response to nonsense" do
-      h = Box.process_dependent_defaults(:blize => 5)
-      h.should be_empty
+      h = Box.new.process_defaults(:blize => 5)
+      h[:blize].should be_nil
     end
     
     
   end
+
+  describe "process_defaults" do
+    it "should be transparent by default" do
+      h = Box.new.process_defaults({})
+      h[:transparent].should be_true
+    end
+    
+    it "should be non-transparent after over-riding default" do
+      h = Box.new.process_defaults(transparent: false)
+      h[:transparent].should be_false
+    end
+  end
+  
   
   describe "a 'square'" do 
     before(:each) do
@@ -332,6 +344,68 @@ EOS
     
   end
   
-  
+  describe "(non) transparent background" do
+    before(:each) do
+      @b = Box.new(width: 20, height: 12, background: '.')
+      @border_box = Box.new(width: 10, height: 6, border_style: :standard, transparent: false)
+    end
+
+    it "should display a blank box" do
+      @b.display.should == BLANK_20_12
+    end
+
+    it "should display the border box properly" do
+      @border_box.display.should == BORDER_10_6
+    end
+    
+    it "the border_box should be transparent" do
+      @border_box.style[:transparent].should be_false
+    end
+    
+    
+    describe "adding bordered box via add_at" do
+      before(:each) do
+        @b.add_at(@border_box, 5, 3)
+      end
+      
+      it "display properly" do
+        @b.display.should == BOX_IN_THE_MIDDLE
+      end
+    end
+    
+    describe "adding bordered box via << with margins" do
+      before(:each) do
+        @border_box.style[:margin_top] = 3
+        @border_box.style[:margin_left] = 5
+        @b << @border_box
+      end
+      
+      it "display properly" do
+        @b.display.should == BOX_IN_THE_MIDDLE
+      end
+    end
+    
+    describe "adding bordered box via << with padding" do
+      before(:each) do
+        @b.style[:padding_top]  = 3
+        @b.style[:padding_left] = 5
+        @b << @border_box
+      end
+      
+      it "display properly" do
+        @b.display.should == BOX_IN_THE_MIDDLE
+      end
+    end
+
+    describe "adding bordered box via add_centered" do
+      before(:each) do
+        @b.add_centered @border_box
+      end
+      
+      it "display properly" do
+        @b.display.should == BOX_IN_THE_MIDDLE
+      end
+    end
+  end
   
 end

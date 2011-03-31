@@ -1,58 +1,15 @@
 require_relative 'background'
 require_relative 'line'
+require_relative 'shared_default_stylings'
 
 class Box
+  include DefaultsProcessor
   include Background
 
-  DEFAULT_CORNERS = {
-    standard: '+'
-  }
-
-  DEFAULT_STYLING = {
-    #position
-    x: 0,
-    y: 0,
-    #size
-    width:  0,
-    height: 0,
-    #background
-    background: ' ',
-    #springingness
-    spring_x: false,
-    spring_y: false,
-    #border
-    border_style: nil,
-    #corners
-    top_left_corner:     nil,
-    top_right_corner:    nil,
-    bottom_left_corner:  nil,
-    bottom_right_corner: nil,
-    #margins
-    margin_top:    0,
-    margin_bottom: 0,
-    margin_left:   0,
-    margin_right:  0
-
-  }
-
   DEPENDENT_DEFAULTS = {
-    margins: {
-      type: :direct,
-      dependents: [:margin_top, :margin_bottom, 
-        :margin_left, :margin_right]
-    },
-    springy: {
-      type: :direct,
-      dependents: [:spring_x, :spring_y] 
-    },
-    border_style: {
-      type: :additional,
-      dependents: [:border_style],
-      also: [:corners]
-    },
     corners: {
       type: :hash,
-      hash: DEFAULT_CORNERS,
+      hash: {standard: '+'},
       dependents: [:top_left_corner, :top_right_corner, 
         :bottom_left_corner, :bottom_right_corner]
     },
@@ -66,7 +23,7 @@ class Box
   attr_accessor :style
 
   def initialize(opts = {})
-    @style = self.class.process_styles(opts)
+    @style = process_defaults(opts)
     @text = process_text(opts.fetch(:text, nil))
     @objects = []
   end
@@ -83,13 +40,16 @@ class Box
       next unless in_bounds?(0, j + y)
       line.each_char.with_index do |chr, i|
         if chr != ignore && in_bounds?(i + x, j + y)
-          display_array[j + y][i + x] = chr
+          display_array[j + y + style[:padding_top] ] \
+                       [i + x + style[:padding_left] ] = chr
         end
       end
     end
   end
 
   def << (object)
+    object.style[:x] += object.style[:margin_left]
+    object.style[:y] += object.style[:margin_top]
     @objects << object
     readjust_size!
     self
@@ -109,7 +69,7 @@ class Box
     else
       object.style[:x] = @objects.last.right_clearance
       object.style[:y] = @objects.last.style[:y]
-      @objects << object
+      self.<< object
     end
 
     readjust_size!
@@ -122,62 +82,55 @@ class Box
     else
       object.style[:x] = @objects.last.style[:x]
       object.style[:y] = @objects.last.bottom_clearance
-      @objects << object
+      self.<< object
     end
 
     readjust_size!
     self
   end
 
-  def in_bounds?(x = 0, y = 0)
-    (x >= 0) && (y >= 0) && (x < @style[:width]) && (y < @style[:height])
+  def add_at(object, x = 0, y = 0)
+    object.style[:x] = x
+    object.style[:y] = y
+    self.<< object
   end
 
-  def self.process_styles(styling)
-    style_hash = process_dependent_defaults(styling)
-    
-    DEFAULT_STYLING.each_pair do |key, default_value|
-      style_hash[key] = styling[key] || style_hash[key] || default_value
-    end
-
-    style_hash
+  def add_centered(object)
+    horizontal_center!(object)
+    vertical_center!(object)
+    self.<< object
   end
 
-  def self.process_dependent_defaults(styling)
-    style_hash = {}
-    DEPENDENT_DEFAULTS.each_pair do |key, opts_hash|
-      if styling[key]
-        process_dependent_default(styling, style_hash, key, opts_hash)
-      end
-    end
-
-    style_hash
-  end
-
-  def self.process_dependent_default(styling, style_hash, key, opts_hash)
-    case opts_hash[:type]
-    when :direct
-      opts_hash[:dependents].each do |dependent|
-        style_hash[dependent] = styling[key]
-      end
-    when :additional
-      opts_hash[:dependents].each do |dependent|
-        style_hash[dependent] = styling[key]
-      end
-      opts_hash[:also].each do |also_key|
-        also_value = DEPENDENT_DEFAULTS[also_key]
-        styling[also_key] ||= styling[key]
-        process_dependent_default(styling, style_hash, also_key, also_value)
-      end
+  def horizontal_center!(object)
+    if object.style[:width] > style[:width]
+      object.style[:x] = 0
     else
-      opts_hash[:dependents].each do |dependent|
-        type = opts_hash[:type]
-        style_hash[dependent] = opts_hash[type][ styling[key] ]
-      end
+      object.style[:x] = (style[:width] - object.style[:width]) / 2
     end
+  end
+
+  def vertical_center!(object)
+    if object.style[:height] > style[:height]
+      object.style[:y] = 0
+    else
+      object.style[:y] = (style[:height] - object.style[:height]) / 2
+    end
+  end
+
+  def in_bounds?(x = 0, y = 0)
+    (x >= 0) && (y >= 0) && (x < style[:width] - style[:padding_right] - style[:padding_left]) && (y < style[:height] - style[:padding_top] - style[:padding_bottom])
   end
 
   private
+
+  def default_values
+    SharedDefaultStylings::DEFAULT_STYLING
+  end
+
+  def dependent_defaults
+    @@dependent_defaults ||= 
+      SharedDefaultStylings::DEPENDENT_DEFAULTS.merge(DEPENDENT_DEFAULTS)
+  end
 
   def draw_border!
     return unless @style[:border_style]

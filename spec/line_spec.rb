@@ -1,5 +1,3 @@
-require_relative '../lib/line'
-require_relative '../lib/box'
 require_relative 'spec_helper'
 
 describe Line do
@@ -13,7 +11,11 @@ describe Line do
       @b << @l
     end
     
-    it "should do stuff" do
+    it "should have standard markings" do
+      @l.style[:mark].should == :standard
+    end
+  
+    it "should display properly" do
       @b.display.should == <<EOS
 ....................
 ....................
@@ -38,7 +40,7 @@ EOS
       @b << @l
     end
     
-    it "should do stuff" do
+    it "should display properly" do
       @b.display.should == <<EOS
 ......|.............
 ......|.............
