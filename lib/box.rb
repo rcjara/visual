@@ -6,6 +6,11 @@ class Box
   include DefaultsProcessor
   include Background
 
+  DEFAULT_STYLING = {
+    #text-align
+    text_align: :left
+  }
+
   DEPENDENT_DEFAULTS = {
     corners: {
       type: :hash,
@@ -20,18 +25,23 @@ class Box
   }
 
 
-  attr_accessor :style
+  attr_accessor :style, :text
 
   def initialize(opts = {})
     @style = process_defaults(opts)
-    @text = process_text(opts.fetch(:text, nil))
     @objects = []
+    process_text(opts.fetch(:text, nil))
   end
+
+###########
+# Drawing #
+###########
 
   def construct_display_array
     @display_array = background_array.dup
-    draw_border!
+    draw_border
     @objects.each{ |o| o.draw_to(self) }
+    draw_text
     @display_array
   end
 
@@ -47,13 +57,9 @@ class Box
     end
   end
 
-  def << (object)
-    object.style[:x] += object.style[:margin_left]
-    object.style[:y] += object.style[:margin_top]
-    @objects << object
-    readjust_size!
-    self
-  end
+########
+# Info #
+########
 
   def right_clearance
     style[:x] + style[:margin_right] + style[:width]
@@ -62,6 +68,24 @@ class Box
   def bottom_clearance
     style[:y] + style[:margin_bottom] + style[:height]
   end
+
+  def in_bounds?(x = 0, y = 0)
+    (x >= 0) && (y >= 0) && (x < style[:width] - style[:padding_right] - style[:padding_left]) && (y < style[:height] - style[:padding_top] - style[:padding_bottom])
+  end
+
+
+##########
+# Adding #
+##########
+
+  def << (object)
+    object.style[:x] += object.style[:margin_left]
+    object.style[:y] += object.style[:margin_top]
+    @objects << object
+    readjust_size!
+    self
+  end
+
 
   def add_right(object)
     if @objects.empty?
@@ -117,14 +141,41 @@ class Box
     end
   end
 
-  def in_bounds?(x = 0, y = 0)
-    (x >= 0) && (y >= 0) && (x < style[:width] - style[:padding_right] - style[:padding_left]) && (y < style[:height] - style[:padding_top] - style[:padding_bottom])
+########
+# Text #
+########
+
+  def process_text(new_text)
+    @text = new_text
+    @text_dimensions = if @text
+      array = text_array
+      { x: 0, y: 0, width: array[0].length, height: array.length }
+    else
+      { x: 0, y: 0, width: 0, height: 0 }
+    end
+    readjust_size!
+  end
+
+  def draw_text
+    mark(0, 0, text_array)
+  end
+
+  def text_array
+    return [] unless @text
+    base_lines = @text.split(/\n/)
+    max_width  = base_lines.inject(0){ |m, line| [m, line.length].max }
+    base_lines.collect { |line| line + style[:background] * (max_width - line.length) }
   end
 
   private
 
+  def contained_styles
+    @objects.collect(&:style) + [@text_dimensions]
+  end
+
   def default_values
-    SharedDefaultStylings::DEFAULT_STYLING
+    @@default_styling ||=
+      SharedDefaultStylings::DEFAULT_STYLING.merge(DEFAULT_STYLING)
   end
 
   def dependent_defaults
@@ -132,7 +183,7 @@ class Box
       SharedDefaultStylings::DEPENDENT_DEFAULTS.merge(DEPENDENT_DEFAULTS)
   end
 
-  def draw_border!
+  def draw_border
     return unless @style[:border_style]
     case @style[:border_style]
     when :standard
@@ -157,28 +208,24 @@ class Box
     draw_corners!
   end
 
-  def process_text(text)
-    return nil unless text
-  end
-
   def readjust_size!
-    readjust(:width)  if @style[:spring_x]
-    readjust(:height) if @style[:spring_y]
+    readjust_width!
+    readjust_height!
   end
 
-  #only ever used for width/height
-  def readjust(property)
-    position = case property
-      when :width
-        :x
-      when :height
-        :y
-      end
-    max = @objects.inject(0) do |m, obj|
-      [m, obj.style[position] + obj.style[property] ].max
+  def readjust_width!
+    max = contained_styles.inject(0) do |m, s|
+      [m, s[:width] + s[:x] + style[:padding_left] + style[:padding_right] ].max
     end
 
-    @style[property] = max if max > @style[property]
+    @style[:width] = max if max > @style[:width]
   end
 
+  def readjust_height!
+    max = contained_styles.inject(0) do |m, s|
+      [m, s[:height] + s[:y] + style[:padding_top] + style[:padding_bottom] ].max
+    end
+
+    @style[:height] = max if max > @style[:height]
+  end
 end

@@ -32,7 +32,7 @@ module SharedDefaultStylings
     padding_top:    0,
     padding_bottom: 0,
     padding_left:   0,
-    padding_right:  0
+    padding_right:  0,
   }
 
   DEPENDENT_DEFAULTS = {
@@ -44,6 +44,10 @@ module SharedDefaultStylings
     springy: {
       type: :direct,
       dependents: [:spring_x, :spring_y] 
+    },
+    padding: {
+      type: :direct,
+      dependents: [:padding_top, :padding_bottom, :padding_left, :padding_right]
     },
     border_style: {
       type: :additional,

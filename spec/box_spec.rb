@@ -139,8 +139,67 @@ EOS
     end
   end
 
-  describe "a Box with padding and non-wrapping text" do
+  describe "a simple Box with text" do
+    before(:each) do
+      @b = Box.new(text: "Hello world", springy: true)
+    end
+
+    it "should have the right text array" do
+      @b.text_array.should == ["Hello world"]
+    end
+    
+    
+    it "should display properly" do
+      @b.display.should == <<EOS
+Hello world
+EOS
+    end
   end
+
+  describe "a box with padding and text" do
+    before(:each) do
+      @b = Box.new(padding: 1, text: "Hello world!", background: ".", springy: true)
+    end
+
+    it "should have text" do
+      @b.text.should == "Hello world!"
+    end
+    
+
+    it "should have the right text array" do
+      @b.text_array.should == ["Hello world!"]
+    end
+    
+    
+    it "should display properly" do
+      @b.display.should == <<EOS
+..............
+.Hello world!.
+..............
+EOS
+    end
+    
+  end
+
+  describe "multiple lines of text with padding" do
+    before(:each) do
+      @b = Box.new(padding: 1, text: "Hi there\nyou guys\n... what up?", background: '.', springy: true)
+    end
+
+    it "should display properly" do
+      @b.display.should == <<EOS
+..............
+.Hi there.....
+.you guys.....
+.... what up?.
+..............
+EOS
+    end
+    
+    
+  end
+  
+  
 
   describe "a fully springy box" do
     before(:each) do
