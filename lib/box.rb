@@ -29,10 +29,17 @@ class Box
 
   def initialize(opts = {})
     @style = process_defaults(opts)
+    border_check!
     @objects = []
     process_text(opts.fetch(:text, nil))
   end
 
+  def border_check!
+    return unless style[:border_style]
+    [:padding_top, :padding_bottom, :padding_left, :padding_right].each do |pad|
+      style[pad] += 1
+    end
+  end
 ###########
 # Drawing #
 ###########

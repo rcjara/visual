@@ -49,6 +49,14 @@ module SharedDefaultStylings
       type: :direct,
       dependents: [:padding_top, :padding_bottom, :padding_left, :padding_right]
     },
+    horizontal_padding: {
+      type: :direct,
+      dependents: [:padding_left, :padding_right]
+    },
+    vertical_padding: {
+      type: :direct,
+      dependents: [:padding_top, :padding_bottom]
+    },
     border_style: {
       type: :additional,
       dependents: [:border_style],

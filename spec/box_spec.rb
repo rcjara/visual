@@ -195,6 +195,55 @@ EOS
 ..............
 EOS
     end
+  end
+
+  describe "text in a border with horizontal padding" do
+    before(:each) do
+      @b = Box.new(horizontal_padding: 2, border_style: :standard, 
+        text: "This looks like a title!", springy: true)
+    end
+
+    it "should have the right paddings" do
+      @b.style[:padding_top].should == 1
+      @b.style[:padding_bottom].should == 1
+      @b.style[:padding_left].should == 3
+      @b.style[:padding_right].should == 3
+    end
+    
+
+    it "should display properly" do
+      @b.display.should == <<EOS
++----------------------------+
+|  This looks like a title!  |
++----------------------------+
+EOS
+    end
+    
+    
+  end
+  
+  describe "centered text in a border with horizontal padding" do
+    before(:each) do
+      @b = Box.new(horizontal_padding: 2, border_style: :standard, 
+        text: "This looks like a title II:\nThe Titling", springy: true,
+        text_align: :center)
+    end
+
+    it "should have the right paddings" do
+      @b.style[:padding_top].should    == 1
+      @b.style[:padding_bottom].should == 1
+      @b.style[:padding_left].should   == 3
+      @b.style[:padding_right].should  == 3
+    end
+    
+    it "should display properly" do
+      @b.display.should == <<EOS
++-------------------------------+
+|  This looks like a title II:  |
+|          The Titling          |
++-------------------------------+
+EOS
+    end
     
     
   end
